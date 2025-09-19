@@ -21,7 +21,7 @@ ScreenGui.Parent = game.CoreGui
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 500, 0, 500)
+MainFrame.Size = UDim2.new(0, 300, 0, 300)
 MainFrame.Position = UDim2.new(0.5, -50, 0.5, -50)
 MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 MainFrame.BorderSizePixel = 0
