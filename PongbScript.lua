@@ -21,7 +21,7 @@ ScreenGui.Parent = game.CoreGui
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 250, 0, 250)
+MainFrame.Size = UDim2.new(0, 500, 0, 500)
 MainFrame.Position = UDim2.new(0.5, -50, 0.5, -50)
 MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 MainFrame.BorderSizePixel = 0
@@ -35,7 +35,7 @@ Title.Size = UDim2.new(1, 0, 0, 20)
 Title.Position = UDim2.new(0, 0, 0, 0)
 Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Text = "ESP & Aimbot"
+Title.Text = "SaygexHub"
 Title.Font = Enum.Font.SourceSansBold
 Title.Parent = MainFrame
 
