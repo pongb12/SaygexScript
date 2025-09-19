@@ -1,4 +1,4 @@
-
+-- Defusal FPS --
 if not _G.LazyLoadInitialized then
     _G.LazyLoadInitialized = true
     _G.ESPEnabled = false
