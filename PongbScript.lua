@@ -5,6 +5,7 @@ if not _G.LazyLoadInitialized then
     _G.AimbotEnabled = false
     _G.PlayerCache = {}
     _G.ESPObjects = {}
+    _G.MyTeam = nil
 end
 
 
@@ -41,7 +42,7 @@ Title.Size = UDim2.new(1, 0, 0, 30)
 Title.Position = UDim2.new(0, 0, 0, 0)
 Title.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Text = "SaygexHub"
+Title.Text = "ESP & AIMBOT"
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 16
 Title.Parent = MainFrame
@@ -123,7 +124,7 @@ ESPToggle.MouseButton1Click:Connect(function()
     _G.ESPEnabled = not _G.ESPEnabled
     ESPToggle.Text = "ESP: " .. (_G.ESPEnabled and "ON" or "OFF")
     
-    
+  
     local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local tween = TweenService:Create(
         ESPToggle, 
@@ -144,7 +145,7 @@ AimbotToggle.MouseButton1Click:Connect(function()
     _G.AimbotEnabled = not _G.AimbotEnabled
     AimbotToggle.Text = "AIMBOT: " .. (_G.AimbotEnabled and "ON" or "OFF")
     
-   
+ 
     local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local tween = TweenService:Create(
         AimbotToggle, 
@@ -156,7 +157,7 @@ end)
 
 
 CloseButton.MouseButton1Click:Connect(function()
-  
+
     local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
     local tween = TweenService:Create(
         MainFrame, 
@@ -170,6 +171,111 @@ CloseButton.MouseButton1Click:Connect(function()
         script:Destroy()
     end)
 end)
+
+
+function FindTeamFrames(instance, depth)
+    if depth > 10 then return nil, nil end 
+    
+    local ctPlayers, tPlayers
+    
+    
+    if instance.Name == "CTPlayers" then
+        ctPlayers = instance
+    elseif instance.Name == "TPlayers" then
+        tPlayers = instance
+    end
+    
+   
+    for _, child in ipairs(instance:GetChildren()) do
+        local foundCT, foundT = FindTeamFrames(child, depth + 1)
+        if foundCT then ctPlayers = foundCT end
+        if foundT then tPlayers = foundT end
+    end
+    
+    return ctPlayers, tPlayers
+end
+
+
+function GetPlayerTeamFromLeaderboard(player)
+    local localPlayer = Players.LocalPlayer
+    if not localPlayer or not localPlayer:FindFirstChild("PlayerGui") then
+        return nil
+    end
+    
+    local playerGui = localPlayer.PlayerGui
+    if not playerGui:FindFirstChild("HUD") then
+        return nil
+    end
+    
+    local hud = playerGui.HUD
+    if not hud:FindFirstChild("Leaderboard") then
+        return nil
+    end
+    
+    local leaderboard = hud.Leaderboard
+    local frame = leaderboard:FindFirstChild("Frame")
+    
+    if not frame then
+   
+        local ctPlayers, tPlayers = FindTeamFrames(leaderboard, 0)
+        
+
+        if ctPlayers and ctPlayers:FindFirstChild(player.Name) then
+            return "CTPlayers"
+        end
+        
+
+        if tPlayers and tPlayers:FindFirstChild(player.Name) then
+            return "TPlayers"
+        end
+    else
+
+        local ctPlayers = frame:FindFirstChild("CTPlayers")
+        local tPlayers = frame:FindFirstChild("TPlayers")
+        
+    
+        if ctPlayers and ctPlayers:FindFirstChild(player.Name) then
+            return "CTPlayers"
+        end
+        
+
+        if tPlayers and tPlayers:FindFirstChild(player.Name) then
+            return "TPlayers"
+        end
+    end
+    
+    return nil
+end
+
+
+function GetMyTeam()
+    if _G.MyTeam then
+        return _G.MyTeam
+    end
+    
+    _G.MyTeam = GetPlayerTeamFromLeaderboard(LocalPlayer)
+    return _G.MyTeam
+end
+
+
+function IsEnemy(player)
+    if player == LocalPlayer then
+        return false
+    end
+    
+    local myTeam = GetMyTeam()
+    if not myTeam then
+        return false
+    end
+    
+    local playerTeam = GetPlayerTeamFromLeaderboard(player)
+    if not playerTeam then
+        return false
+    end
+    
+
+    return myTeam ~= playerTeam
+end
 
 
 function ClearESP()
@@ -186,10 +292,12 @@ function CreateESP(player)
         return
     end
 
+    local isEnemy = IsEnemy(player)
+    
     local highlight = Instance.new("Highlight")
     highlight.Name = player.Name .. "_ESP"
     highlight.Adornee = player.Character
-    highlight.FillColor = player.Team ~= LocalPlayer.Team and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(50, 255, 50)
+    highlight.FillColor = isEnemy and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(50, 255, 50)
     highlight.FillTransparency = 0.4
     highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
     highlight.OutlineTransparency = 0
@@ -207,7 +315,7 @@ function CreateESP(player)
     nameLabel.Size = UDim2.new(1, 0, 0.5, 0)
     nameLabel.Position = UDim2.new(0, 0, 0, 0)
     nameLabel.BackgroundTransparency = 1
-    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameLabel.TextColor3 = isEnemy and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(100, 255, 100)
     nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
     nameLabel.TextStrokeTransparency = 0
     nameLabel.Text = player.Name
@@ -215,21 +323,25 @@ function CreateESP(player)
     nameLabel.TextSize = 16
     nameLabel.Parent = billboard
     
-    local distanceLabel = Instance.new("TextLabel")
-    distanceLabel.Size = UDim2.new(1, 0, 0.5, 0)
-    distanceLabel.Position = UDim2.new(0, 0, 0.5, 0)
-    distanceLabel.BackgroundTransparency = 1
-    distanceLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-    distanceLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    distanceLabel.TextStrokeTransparency = 0
-    distanceLabel.Font = Enum.Font.Gotham
-    distanceLabel.TextSize = 14
-    distanceLabel.Parent = billboard
+    local teamLabel = Instance.new("TextLabel")
+    teamLabel.Size = UDim2.new(1, 0, 0.5, 0)
+    teamLabel.Position = UDim2.new(0, 0, 0.5, 0)
+    teamLabel.BackgroundTransparency = 1
+    teamLabel.TextColor3 = isEnemy and Color3.fromRGB(255, 150, 150) or Color3.fromRGB(150, 255, 150)
+    teamLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    teamLabel.TextStrokeTransparency = 0
+    teamLabel.Font = Enum.Font.Gotham
+    teamLabel.TextSize = 14
+    
+    local playerTeam = GetPlayerTeamFromLeaderboard(player)
+    teamLabel.Text = playerTeam or "UNKNOWN"
+    
+    teamLabel.Parent = billboard
     
     table.insert(_G.ESPObjects, highlight)
     table.insert(_G.ESPObjects, billboard)
     
-    return {Highlight = highlight, Billboard = billboard, DistanceLabel = distanceLabel}
+    return {Highlight = highlight, Billboard = billboard, TeamLabel = teamLabel}
 end
 
 function UpdateESP()
@@ -239,23 +351,21 @@ function UpdateESP()
     
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character then
-            local esp = CreateESP(player)
-            if esp then
-            
-                local distance = (LocalPlayer.Character.Head.Position - player.Character.Head.Position).Magnitude
-                esp.DistanceLabel.Text = tostring(math.floor(distance)) .. " studs"
-            end
+            CreateESP(player)
         end
     end
 end
 
 
-function FindNearestPlayer()
+function FindNearestEnemy()
     local nearestPlayer = nil
     local nearestDistance = math.huge
     
     for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+        if player ~= LocalPlayer and IsEnemy(player) and player.Character and 
+           player.Character:FindFirstChild("Head") and player.Character:FindFirstChild("Humanoid") and 
+           player.Character.Humanoid.Health > 0 then
+            
             local distance = (LocalPlayer.Character.Head.Position - player.Character.Head.Position).Magnitude
             if distance < nearestDistance then
                 nearestDistance = distance
@@ -279,7 +389,7 @@ function AimAtHead(player)
         local targetPosition = player.Character.Head.Position
         local newCFrame = CFrame.new(currentCFrame.Position, targetPosition)
         
-     
+
         local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
         local tween = TweenService:Create(camera, tweenInfo, {CFrame = newCFrame})
         tween:Play()
@@ -296,11 +406,20 @@ spawn(function()
 end)
 
 
+spawn(function()
+    while wait(2) do
+       
+        _G.MyTeam = nil
+        GetMyTeam()
+    end
+end)
+
+
 RunService.RenderStepped:Connect(function()
     if _G.AimbotEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head") then
-        local nearestPlayer, distance = FindNearestPlayer()
-        if nearestPlayer and distance < 1000 then  
-            AimAtHead(nearestPlayer)
+        local nearestEnemy, distance = FindNearestEnemy()
+        if nearestEnemy and distance < 1000 then 
+            AimAtHead(nearestEnemy)
         end
     end
 end)
@@ -346,7 +465,6 @@ _.c = "AnotherRandomName"
 
 if not _G.FunctionsLoaded then
     _G.FunctionsLoaded = true
-
 end
 
 
